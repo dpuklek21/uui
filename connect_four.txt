@@ -1,0 +1,139 @@
+ROWS = 7
+COLS = 6
+
+PLAYER = "O"
+AI = "X"
+
+board = [["-" for i in range(COLS)] for j in range(ROWS)]
+currentMove = "player"
+
+def putTokenOnBoard(token, column):
+    if column < 0 or column >= COLS or board[0][column] != "-":
+        return -1
+    
+    for row in range(ROWS-1, -1, -1):
+        if board[row][column] == "-":
+            board[row][column] = token
+            return row
+
+    return -1
+
+def removeToken(column):
+    for row in range(ROWS):
+        if board[row][column] != "-":
+            board[row][column] = "-"
+            break
+
+def printBoard():
+    for boardRow in board:
+        print(*boardRow, sep=" ")
+
+def checkDraw():
+    for col in range(COLS):
+        if board[0][col] == "-":
+            return False
+    return True
+
+
+def isGameOver():
+    for row in range(ROWS):
+        for col in range(COLS - 3):
+            if board[row][col] == board[row][col + 1] == board[row][col + 2] == board[row][col + 3] != "-":
+                return True
+    for row in range(ROWS - 3):
+        for col in range(COLS):
+            if board[row][col] == board[row + 1][col] == board[row + 2][col] == board[row + 3][col] != "-":
+                return True
+    for row in range(ROWS - 3):
+        for col in range(COLS - 3):
+            if board[row][col] == board[row + 1][col + 1] == board[row + 2][col + 2] == board[row + 3][col + 3] != "-":
+                return True
+    for row in range(3, ROWS):
+        for col in range(COLS - 3):
+            if board[row][col] == board[row - 1][col + 1] == board[row - 2][col + 2] == board[row - 3][col + 3] != "-":
+                return True
+    
+    return checkDraw()
+
+def evaluate():
+    score = 0
+    for row in range(ROWS):
+        for col in range(COLS):
+            if board[row][col] == AI:
+                score += 1
+            elif board[row][col] == PLAYER:
+                score -= 1
+    return score
+
+
+def minimax(depth, maximizingPlayer, alpha, beta):
+    if depth == 0 or isGameOver():
+        return evaluate()
+
+    if maximizingPlayer:
+        maxEval = float('-inf')
+        for col in range(COLS):
+            if putTokenOnBoard(AI, col) != -1:
+                eval = minimax(depth - 1, False, alpha, beta)
+                removeToken(col)
+                maxEval = max(maxEval, eval)
+                alpha = max(alpha, eval)
+                if beta <= alpha:
+                    break
+        return maxEval
+    else:
+        minEval = float('inf')
+        for col in range(COLS):
+            if putTokenOnBoard(PLAYER, col) != -1:
+                eval = minimax(depth - 1, True, alpha, beta)
+                removeToken(col)
+                minEval = min(minEval, eval)
+                beta = min(beta, eval)
+                if beta <= alpha:
+                    break
+        return minEval
+
+
+def getBestMove():
+    bestScore = float('-inf')
+    bestMove = -1
+    for col in range(COLS):
+        if putTokenOnBoard(AI, col) != -1:
+            score = minimax(4, False, float('-inf'), float('inf'))
+            removeToken(col)
+            if score > bestScore:
+                bestScore = score
+                bestMove = col
+    return bestMove
+
+printBoard()
+while not isGameOver():
+    if currentMove == "player":
+        correctInput = -1
+        print("Vaš potez!")
+
+        while correctInput == -1:
+            column = int(input("Unesite stupac u koji želite baciti žeton: "))
+            correctInput = putTokenOnBoard(PLAYER, column-1)
+
+            print(correctInput)
+
+            if correctInput == -1:
+                print("Pogrešan unos! Pokušajte ponovo.")
+        currentMove = "ai"
+
+    elif currentMove == "ai":
+        print("AI potez!")
+        aiMove = getBestMove()
+        putTokenOnBoard(AI, aiMove)
+        currentMove = "player"
+
+    printBoard()
+
+print("Kraj igre!")
+if checkDraw():
+    print("Neriješeno!")
+elif currentMove == "player":
+    print("Pobjedio je AI!")
+else:
+    print("Pobijedili ste!")
